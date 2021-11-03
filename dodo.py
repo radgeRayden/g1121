@@ -6,11 +6,19 @@ OS = platform.system()
 is_windows = OS.startswith("MINGW")
 is_linux = OS == "Linux"
 
+def task_bin():
+    """build the game binary"""
+    return {
+        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/game ./build/game.o"],
+        'targets': ["./bin/game"],
+        'uptodate': [False]
+    }
+
 def task_launch():
     """launch the game"""
-    cmd = "scopes ./src/boot.sc -run"
+    cmd = "./bin/game"
     return {
             'actions': [LongRunning(cmd)],
-            # 'file_dep': runtime_targets,
+            'file_dep': ["./bin/game"],
             'uptodate': [False]
         }
