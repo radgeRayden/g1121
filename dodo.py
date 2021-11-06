@@ -9,7 +9,7 @@ is_linux = operating_system == "Linux"
 def task_bin():
     """build the game binary"""
     return {
-        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/game ./build/game.o"],
+        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/game ./build/game.o -lSDL2"],
         'targets': ["./bin/game"],
         'uptodate': [False]
     }
