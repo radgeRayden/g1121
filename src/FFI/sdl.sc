@@ -7,8 +7,9 @@ let header =
 let sdl-extern = (filter-scope header.extern "^SDL_")
 let sdl-typedef = (filter-scope header.typedef "^SDL_")
 let sdl-define = (filter-scope header.define "^(?=SDL_)")
+let sdl-const = (filter-scope header.const "^(?=SDL_)")
 
-let sdl = (.. sdl-extern sdl-typedef sdl-define)
+let sdl = (.. sdl-extern sdl-typedef sdl-define sdl-const)
 run-stage;
 
 let sdl-macros =

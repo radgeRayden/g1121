@@ -16,6 +16,16 @@ fn main (argc argv)
             480
             0
 
+    local running = true
+    while running
+        local event : sdl.Event
+        while (sdl.PollEvent &event)
+            switch event.type
+            case sdl.SDL_QUIT
+                running = false
+            default
+                ;
+
     stdio.printf "%s\n" cs"henlo world"
     0
 
