@@ -6,33 +6,17 @@ let stdio = ((include "stdio.h") . extern)
 let sdl = (import .FFI.sdl)
 let wgpu = (import .FFI.wgpu)
 
+import .window
+
 inline &local (T ...)
     &
         local T
             ...
 
-fn get-native-window-info (window)
-    local info : sdl.SysWMinfo
-    sdl.SDL_VERSION &info.version
-
-    # assert
-    (sdl.GetWindowWMInfo window &info)
-
-    let info = info.info
-
-    # FIXME: use the window subsystem enum properly
+fn create-wgpu-surface ()
     static-match operating-system
     case 'linux
-        _ info.x11.display info.x11.window
-    case 'windows
-        _ info.win.hinstance info.win.window
-    default
-        error "OS not supported"
-
-fn create-wgpu-surface (window)
-    static-match operating-system
-    case 'linux
-        let x11-display x11-window = (get-native-window-info window)
+        let x11-display x11-window = (window.get-native-info)
         wgpu.InstanceCreateSurface null
             &local wgpu.SurfaceDescriptor
                 nextInChain =
@@ -45,7 +29,7 @@ fn create-wgpu-surface (window)
                             window = (x11-window as u32)
                         mutable@ wgpu.ChainedStruct
     case 'windows
-        let hinstance hwnd = (get-native-window-info window)
+        let hinstance hwnd = (window.get-native-info)
         wgpu.InstanceCreateSurface null
             &local wgpu.SurfaceDescriptor
                 nextInChain =
@@ -80,8 +64,8 @@ fn update-swapchain (width height)
                 height = (height as u32)
                 presentMode = wgpu.PresentMode.Fifo
 
-fn init-wgpu (window)
-    istate.surface = (create-wgpu-surface window)
+fn init-wgpu ()
+    istate.surface = (create-wgpu-surface)
 
     # FIXME: check for status code!
     wgpu.InstanceRequestAdapter null
@@ -100,21 +84,17 @@ fn init-wgpu (window)
             istate.device = result
         null
 
-    local width : i32
-    local height : i32
-    sdl.GetWindowSize window &width &height
-    update-swapchain width height
+    update-swapchain (window.get-size)
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
 
 global window-width : i32
 global window-height : i32
 
-fn present (window)
-    local width : i32
-    local height : i32
-    sdl.GetWindowSize window &width &height
+fn present ()
+    let width height = (window.get-size)
 
+    # maybe do this on the resize callback...
     if (window-width != width or window-height != height)
         update-swapchain width height
         window-width = width
@@ -150,20 +130,12 @@ fn present (window)
     ;
 
 fn main (argc argv)
-    sdl.Init
-        sdl.SDL_INIT_VIDEO
+    window.init;
 
-    let window =
-        sdl.CreateWindow
-            "my very nice game"
-            sdl.SDL_WINDOWPOS_UNDEFINED
-            sdl.SDL_WINDOWPOS_UNDEFINED
-            640
-            480
-            sdl.SDL_WINDOW_RESIZABLE
-
-    init-wgpu window
-    sdl.GetWindowSize window &window-width &window-height
+    init-wgpu;
+    let width height = (window.get-size)
+    window-width = width
+    window-height = height
 
     local running = true
     while running
@@ -175,7 +147,7 @@ fn main (argc argv)
             default
                 ;
 
-        present window
+        present;
 
     0
 
