@@ -87,6 +87,7 @@ fn init-wgpu (window)
     wgpu.InstanceRequestAdapter null
         &local wgpu.RequestAdapterOptions
             compatibleSurface = istate.surface
+            powerPreference = wgpu.PowerPreference.HighPerformance
         fn (status result msg userdata)
             istate.adapter = result
             ;
@@ -106,14 +107,21 @@ fn init-wgpu (window)
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
 
+global window-width : i32
+global window-height : i32
+
 fn present (window)
-    let swapchain-image = (wgpu.SwapChainGetCurrentTextureView istate.swapchain)
-    if (swapchain-image == null)
-        local width : i32
-        local height : i32
-        sdl.GetWindowSize window &width &height
+    local width : i32
+    local height : i32
+    sdl.GetWindowSize window &width &height
+
+    if (window-width != width or window-height != height)
         update-swapchain width height
+        window-width = width
+        window-height = height
         return;
+
+    let swapchain-image = (wgpu.SwapChainGetCurrentTextureView istate.swapchain)
 
     let cmd-encoder =
         wgpu.DeviceCreateCommandEncoder istate.device
@@ -152,9 +160,10 @@ fn main (argc argv)
             sdl.SDL_WINDOWPOS_UNDEFINED
             640
             480
-            0
+            sdl.SDL_WINDOW_RESIZABLE
 
     init-wgpu window
+    sdl.GetWindowSize window &window-width &window-height
 
     local running = true
     while running
