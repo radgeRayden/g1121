@@ -1,7 +1,61 @@
 import .runtime
 
-let stdio = ((include "stdio.h") . extern)
 let sdl = (import .FFI.sdl)
+let wgpu = (import .FFI.wgpu)
+
+inline &local (T ...)
+    &
+        local T
+            ...
+
+fn get-native-window-info (window)
+    local info : sdl.SysWMinfo
+    sdl.SDL_VERSION &info.version
+
+    # assert
+    (sdl.GetWindowWMInfo window &info)
+
+    let info = info.info
+
+    # FIXME: use the window subsystem enum properly
+    static-match operating-system
+    case 'linux
+        _ info.x11.display info.x11.window
+    case 'windows
+        _ info.win.hinstance info.win.window
+    default
+        error "OS not supported"
+
+fn create-wgpu-surface (window)
+    static-match operating-system
+    case 'linux
+        let x11-display x11-window = (get-native-window-info window)
+        wgpu.InstanceCreateSurface null
+            &local wgpu.SurfaceDescriptor
+                nextInChain =
+                    as
+                        &local wgpu.SurfaceDescriptorFromXlib
+                            chain =
+                                wgpu.ChainedStruct
+                                    sType = wgpu.SType.SurfaceDescriptorFromXlib
+                            display = (x11-display as voidstar)
+                            window = (x11-window as u32)
+                        mutable@ wgpu.ChainedStruct
+    case 'windows
+        let hinstance hwnd = (get-native-window-info window)
+        wgpu.InstanceCreateSurface null
+            &local wgpu.SurfaceDescriptor
+                nextInChain =
+                    as
+                        &local wgpu.SurfaceDescriptorFromWindowsHWND
+                            chain =
+                                wgpu.ChainedStruct
+                                    sType = wgpu.SType.SurfaceDescriptorFromWindowsHWND
+                            hinstance = hinstance
+                            hwnd = hwnd
+                        mutable@ wgpu.ChainedStruct
+    default
+        error "OS not supported"
 
 fn main (argc argv)
     sdl.Init
@@ -16,6 +70,8 @@ fn main (argc argv)
             480
             0
 
+    let surface = (create-wgpu-surface window)
+
     local running = true
     while running
         local event : sdl.Event
@@ -26,7 +82,6 @@ fn main (argc argv)
             default
                 ;
 
-    stdio.printf "%s\n" cs"henlo world"
     0
 
 do

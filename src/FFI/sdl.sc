@@ -2,7 +2,8 @@ using import .ffi-helpers
 
 let header =
     include
-        "SDL2/SDL.h"
+        """"#include <SDL2/SDL.h>
+            #include <SDL2/SDL_syswm.h>
 
 let sdl-extern = (filter-scope header.extern "^SDL_")
 let sdl-typedef = (filter-scope header.typedef "^SDL_")
@@ -30,7 +31,6 @@ let sdl-macros =
         let SDL_WINDOWPOS_UNDEFINED = (SDL_WINDOWPOS_UNDEFINED_DISPLAY 0)
 
         inline SDL_VERSION (version-struct)
-            imply version-struct sdl.version
             version-struct.major = sdl.SDL_MAJOR_VERSION
             version-struct.minor = sdl.SDL_MINOR_VERSION
             version-struct.patch = sdl.SDL_PATCHLEVEL
@@ -45,5 +45,21 @@ let sdl-macros =
         inline SDL_VERSION_ATLEAST (major minor patch)
             (SDL_COMPILEDVERSION) >= (SDL_VERSIONNUM major minor patch)
         locals;
+
+inline enum-constructor (T)
+    bitcast 0 T
+
+for scope in ('lineage sdl)
+    for k v in scope
+        if (('typeof v) == type)
+            v as:= type
+            if (v < CEnum)
+                'set-symbol v '__typecall enum-constructor
+
+typedef+ sdl.bool
+    inline __imply (lhsT rhsT)
+        static-if (rhsT == bool)
+            inline (self)
+                (bitcast self i32) as bool
 
 sdl .. sdl-macros

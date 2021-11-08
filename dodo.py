@@ -49,7 +49,7 @@ def task_bin():
     """build the game binary"""
     llibs = "".join(f" -l{lib}" for lib in runtime_libs)
     return {
-        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/{exename} ./build/game.o -Wl,-rpath=$ORIGIN -L./bin {llibs} -lSDL2"],
+        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/{exename} ./build/game.o -Wl,-rpath='$ORIGIN' -L./bin {llibs} -lSDL2"],
         'targets': [f"./bin/{exename}"],
         'file_dep': [f"./bin/lib{lib}.so" for lib in runtime_libs],
         'uptodate': [False]

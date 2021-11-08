@@ -2,9 +2,9 @@ using import .ffi-helpers
 
 let header =
     include
-        "wgpu/wgpu.h"
+        "wgpu.h"
         options
-            .. "-I" module-dir "/../../cdeps"
+            .. "-I" module-dir "/../../native/wgpu/ffi"
 
 let wgpu-extern = (filter-scope header.extern "^wgpu")
 let wgpu-typedef = (filter-scope header.typedef "^WGPU")
