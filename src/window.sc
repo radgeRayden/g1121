@@ -13,8 +13,7 @@ fn get-native-info ()
     local info : sdl.SysWMinfo
     sdl.SDL_VERSION &info.version
 
-    # assert
-    (sdl.GetWindowWMInfo window &info)
+    assert (sdl.GetWindowWMInfo window &info)
 
     let info = info.info
 
