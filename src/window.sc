@@ -26,6 +26,23 @@ fn get-native-info ()
     default
         error "OS not supported"
 
+
+fn show ()
+    sdl.ShowWindow window
+
+fn hide ()
+    sdl.HideWindow window
+
+fn hidden? ()
+    let flags = (sdl.GetWindowFlags window)
+    (flags & sdl.SDL_WINDOW_HIDDEN) as bool
+
+fn toggle-hidden ()
+    if (hidden?)
+        show;
+    else
+        hide;
+
 fn init ()
     sdl.Init
         sdl.SDL_INIT_VIDEO
@@ -37,12 +54,16 @@ fn init ()
             sdl.SDL_WINDOWPOS_UNDEFINED
             640
             480
-            sdl.SDL_WINDOW_RESIZABLE
+            sdl.SDL_WINDOW_RESIZABLE | sdl.SDL_WINDOW_HIDDEN
 
 do
     let init
         get-size
         get-native-info
+        show
+        hide
+        hidden?
+        toggle-hidden
 
     let handle = window
     locals;

@@ -133,6 +133,8 @@ fn main (argc argv)
     window.init;
 
     init-wgpu;
+    window.show;
+
     let width height = (window.get-size)
     window-width = width
     window-height = height
