@@ -28,24 +28,38 @@ elif "Linux" in operating_system:
     make = "make"
     cc = "gcc"
     cxx = "g++"
-    lflags_common = lflags_common + " -ldl -lX11 -lasound"
+    lflags_common = lflags_common + " -ldl -lX11"
     exename = "game"
 else:
     raise UnsupportedPlatform
 
+def task_wgpu():
+    """build webgpu native"""
+    wgpu = "./native/wgpu"
+    return {
+        'actions': [f"{make} -C {wgpu} lib-native-release", f"cp {wgpu}/target/release/libwgpu_native.so ./bin/"],
+        'targets': [f"./bin/libwgpu_native.so"]
+    }
+
+runtime_libs = [
+    "wgpu_native"
+]
+
 def task_bin():
     """build the game binary"""
+    llibs = "".join(f" -l{lib}" for lib in runtime_libs)
     return {
-        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/{exename} ./build/game.o -lSDL2"],
-        'targets': ["./bin/{exename}"],
+        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/{exename} ./build/game.o -Wl,-rpath=$ORIGIN -L./bin {llibs} -lSDL2"],
+        'targets': [f"./bin/{exename}"],
+        'file_dep': [f"./bin/lib{lib}.so" for lib in runtime_libs],
         'uptodate': [False]
     }
 
 def task_launch():
     """launch the game"""
-    cmd = "./bin/{exename}"
+    cmd = f"./bin/{exename}"
     return {
         'actions': [LongRunning(cmd)],
-        'file_dep': ["./bin/{exename}"],
+        'file_dep': [f"./bin/{exename}"],
         'uptodate': [False]
     }
