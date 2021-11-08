@@ -88,19 +88,8 @@ fn init-wgpu ()
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
 
-global window-width : i32
-global window-height : i32
-
 fn present ()
     let width height = (window.get-size)
-
-    # maybe do this on the resize callback...
-    if (window-width != width or window-height != height)
-        update-swapchain width height
-        window-width = width
-        window-height = height
-        return;
-
     let swapchain-image = (wgpu.SwapChainGetCurrentTextureView istate.swapchain)
 
     let cmd-encoder =
@@ -135,10 +124,6 @@ fn main (argc argv)
     init-wgpu;
     window.show;
 
-    let width height = (window.get-size)
-    window-width = width
-    window-height = height
-
     local running = true
     while running
         local event : sdl.Event
@@ -146,6 +131,12 @@ fn main (argc argv)
             switch event.type
             case sdl.SDL_QUIT
                 running = false
+            case sdl.SDL_WINDOWEVENT
+                switch event.window.event
+                case sdl.SDL_WINDOWEVENT_SIZE_CHANGED
+                    update-swapchain (window.get-size)
+                default
+                    ;
             default
                 ;
 
