@@ -37,7 +37,7 @@ def task_wgpu():
     """build webgpu native"""
     wgpu = "./native/wgpu"
     return {
-        'actions': [f"{make} -C {wgpu} lib-native-release", f"cp {wgpu}/target/release/libwgpu_native.so ./bin/"],
+        'actions': [f"{make} -C {wgpu} lib-native", f"cp {wgpu}/target/debug/libwgpu_native.so ./bin/"],
         'targets': [f"./bin/libwgpu_native.so"]
     }
 

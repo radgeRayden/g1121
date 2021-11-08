@@ -1,5 +1,8 @@
+using import struct
+
 import .runtime
 
+let stdio = ((include "stdio.h") . extern)
 let sdl = (import .FFI.sdl)
 let wgpu = (import .FFI.wgpu)
 
@@ -57,6 +60,52 @@ fn create-wgpu-surface (window)
     default
         error "OS not supported"
 
+struct GfxState plain
+    surface : wgpu.Surface
+    adapter : wgpu.Adapter
+    device  : wgpu.Device
+    swapchain : wgpu.SwapChain
+    queue : wgpu.Queue
+
+global istate : GfxState
+
+fn update-swapchain (width height)
+    istate.swapchain =
+        wgpu.DeviceCreateSwapChain istate.device istate.surface
+            &local wgpu.SwapChainDescriptor
+                label = "swapchain"
+                usage = wgpu.TextureUsage.RenderAttachment
+                format = wgpu.TextureFormat.BGRA8UnormSrgb
+                width = (width as u32)
+                height = (height as u32)
+                presentMode = wgpu.PresentMode.Fifo
+
+fn init-wgpu (window)
+    istate.surface = (create-wgpu-surface window)
+
+    # FIXME: check for status code!
+    wgpu.InstanceRequestAdapter null
+        &local wgpu.RequestAdapterOptions
+            compatibleSurface = istate.surface
+        fn (status result msg userdata)
+            istate.adapter = result
+            ;
+        null
+    wgpu.AdapterRequestDevice istate.adapter
+        &local wgpu.DeviceDescriptor
+            requiredLimits =
+                &local wgpu.RequiredLimits
+        fn (status result msg userdata)
+            istate.device = result
+        null
+
+    local width : i32
+    local height : i32
+    sdl.GetWindowSize window &width &height
+    update-swapchain width height
+
+    istate.queue = (wgpu.DeviceGetQueue istate.device)
+
 fn main (argc argv)
     sdl.Init
         sdl.SDL_INIT_VIDEO
@@ -70,7 +119,7 @@ fn main (argc argv)
             480
             0
 
-    let surface = (create-wgpu-surface window)
+    init-wgpu window
 
     local running = true
     while running
