@@ -106,6 +106,41 @@ fn init-wgpu (window)
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
 
+fn present (window)
+    let swapchain-image = (wgpu.SwapChainGetCurrentTextureView istate.swapchain)
+    if (swapchain-image == null)
+        local width : i32
+        local height : i32
+        sdl.GetWindowSize window &width &height
+        update-swapchain width height
+        return;
+
+    let cmd-encoder =
+        wgpu.DeviceCreateCommandEncoder istate.device
+            &local wgpu.CommandEncoderDescriptor
+                label = "command encoder"
+
+    let rp =
+        wgpu.CommandEncoderBeginRenderPass cmd-encoder
+            &local wgpu.RenderPassDescriptor
+                label = "output render pass"
+                colorAttachmentCount = 1
+                colorAttachments =
+                    &local wgpu.RenderPassColorAttachment
+                        view = swapchain-image
+                        clearColor = (typeinit 0.017 0.017 0.017 1.0)
+
+    wgpu.RenderPassEncoderEndPass rp
+
+    local cmd-buffer =
+        wgpu.CommandEncoderFinish cmd-encoder
+            &local wgpu.CommandBufferDescriptor
+                label = "command buffer"
+
+    wgpu.QueueSubmit istate.queue 1 &cmd-buffer
+    wgpu.SwapChainPresent istate.swapchain
+    ;
+
 fn main (argc argv)
     sdl.Init
         sdl.SDL_INIT_VIDEO
@@ -130,6 +165,8 @@ fn main (argc argv)
                 running = false
             default
                 ;
+
+        present window
 
     0
 
