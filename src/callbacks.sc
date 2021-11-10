@@ -22,5 +22,5 @@ case (evtype : sdl.WindowEventID, fun : WindowEventCallback)
     'set window-event-callbacks evtype fun
 
 do
-    let init dispatch set-callback
+    let dispatch set-callback
     locals;
