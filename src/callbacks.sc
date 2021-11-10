@@ -94,6 +94,23 @@ inline set-callback (evname fun)
         error "unexpected event id type"
         unreachable;
 
+# To be able to handle a quit callback with the ability to back off and keep running,
+# we need an event that means "I really mean it, please quit" that is meant to be triggered
+# from inside such a callback.
+global application-exit-event : sdl.EventType
+
+fn signal-application-exit ()
+    local ev : sdl.Event
+    ev.type = application-exit-event
+    sdl.PushEvent &ev
+    ;
+
+fn get-exit-event-type ()
+    deref application-exit-event
+
+fn init ()
+    application-exit-event = (sdl.RegisterEvents 1)
+
 do
-    let dispatch set-callback
+    let dispatch set-callback init signal-application-exit get-exit-event-type
     locals;

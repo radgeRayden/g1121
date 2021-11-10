@@ -120,6 +120,7 @@ fn present ()
 
 fn main (argc argv)
     window.init;
+    callbacks.init;
 
     init-wgpu;
     window.show;
@@ -128,15 +129,19 @@ fn main (argc argv)
         fn (ev)
             update-swapchain (window.get-size)
 
+    callbacks.set-callback 'quit
+        fn (ev)
+            stdio.printf "Quitting, bye!\n"
+            callbacks.signal-application-exit;
+
     local running = true
     while running
         local event : sdl.Event
         while (sdl.PollEvent &event)
             callbacks.dispatch (deref event)
 
-            if (event.type == sdl.SDL_QUIT)
+            if (event.type == (callbacks.get-exit-event-type))
                 running = false
-                continue;
 
         present;
 
