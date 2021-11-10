@@ -1,6 +1,12 @@
 import .globals
 import .main
 
+let src argc argv = (script-launch-args)
+for i in (range argc)
+    if ((string (argv @ i)) == "-run")
+        main.main 0 0
+        return;
+
 compile-object
     default-target-triple
     compiler-file-kind-object
@@ -9,9 +15,3 @@ compile-object
         let main = (static-typify main.main i32 (mutable@ rawstring))
         locals;
     'O2
-
-let src argc argv = (script-launch-args)
-for i in (range argc)
-    if ((string (argv @ i)) == "-run")
-        main.main 0 0
-        break;
