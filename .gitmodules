@@ -1,3 +1,6 @@
 [submodule "native/wgpu"]
 	path = native/wgpu
 	url = https://github.com/gfx-rs/wgpu-native/
+[submodule "native/xxHash"]
+	path = native/xxHash
+	url = https://github.com/Cyan4973/xxHash
