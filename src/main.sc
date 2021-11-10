@@ -124,7 +124,7 @@ fn main (argc argv)
     init-wgpu;
     window.show;
 
-    callbacks.set-callback sdl.SDL_WINDOWEVENT_SIZE_CHANGED
+    callbacks.set-callback 'window-size-changed
         fn (ev)
             update-swapchain (window.get-size)
 
