@@ -120,7 +120,6 @@ fn present ()
 
 fn main (argc argv)
     window.init;
-    callbacks.init;
 
     init-wgpu;
     window.show;

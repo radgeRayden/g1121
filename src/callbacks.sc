@@ -8,10 +8,6 @@ let WindowEventCallback = (@ (function void sdl.WindowEvent))
 global event-callbacks : (Map sdl.EventType EventCallback)
 global window-event-callbacks : (Map sdl.WindowEventID WindowEventCallback)
 
-fn init ()
-    event-callbacks = (typeinit)
-    window-event-callbacks = (typeinit)
-
 fn dispatch (ev)
     if (ev.type == sdl.SDL_WINDOWEVENT)
         try (('get window-event-callbacks ev.window.event) ev.window)
