@@ -1,12 +1,12 @@
 using import struct
 
-import .runtime
-
-let stdio = ((include "stdio.h") . extern)
+let stdio = (import C.stdio)
 let sdl = (import .FFI.sdl)
 let wgpu = (import .FFI.wgpu)
 
+import .runtime
 import .window
+import .callbacks
 
 inline &local (T ...)
     &
@@ -120,25 +120,24 @@ fn present ()
 
 fn main (argc argv)
     window.init;
+    callbacks.init;
 
     init-wgpu;
     window.show;
+
+    callbacks.set-callback sdl.SDL_WINDOWEVENT_SIZE_CHANGED
+        fn (ev)
+            update-swapchain (window.get-size)
 
     local running = true
     while running
         local event : sdl.Event
         while (sdl.PollEvent &event)
-            switch event.type
-            case sdl.SDL_QUIT
+            callbacks.dispatch (deref event)
+
+            if (event.type == sdl.SDL_QUIT)
                 running = false
-            case sdl.SDL_WINDOWEVENT
-                switch event.window.event
-                case sdl.SDL_WINDOWEVENT_SIZE_CHANGED
-                    update-swapchain (window.get-size)
-                default
-                    ;
-            default
-                ;
+                continue;
 
         present;
 

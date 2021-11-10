@@ -56,10 +56,29 @@ for scope in ('lineage sdl)
             if (v < CEnum)
                 'set-symbol v '__typecall enum-constructor
 
-typedef+ sdl.bool
-    inline __imply (lhsT rhsT)
-        static-if (rhsT == bool)
-            inline (self)
-                (bitcast self i32) as bool
+# Type augmentations so that SDL types work seamlessly across the codebase.
+# =========================================================================
+do
+    typedef+ sdl.bool
+        inline __imply (lhsT rhsT)
+            static-if (rhsT == bool)
+                inline (self)
+                    (bitcast self i32) as bool
+
+    # necessary so these work as Map keys.
+    typedef+ sdl.WindowEventID
+        inline __rimply (lhs rhs)
+            static-if (lhs == u8)
+                inline (other self)
+                    bitcast (other as (storageof this-type)) this-type
+            else
+                super-type.__ras lhs rhs
+
+        inline __== (lhs rhs)
+            static-if (rhs == u8)
+                inline (self other)
+                    (storagecast self) == other
+            else
+                super-type.__== lhs rhs
 
 sdl .. sdl-macros
