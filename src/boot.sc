@@ -14,4 +14,4 @@ compile-object
     do
         let main = (static-typify main.main i32 (mutable@ rawstring))
         locals;
-    'O2
+    'O0
