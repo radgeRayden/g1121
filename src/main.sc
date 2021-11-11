@@ -19,16 +19,17 @@ fn main (argc argv)
             stdio.printf "Quitting, bye!\n"
             callbacks.signal-application-exit;
 
-    local running = true
-    while running
+    :: main-loop
+    loop ()
         local event : sdl.Event
         while (sdl.PollEvent &event)
             callbacks.dispatch (deref event)
 
             if (event.type == (callbacks.get-exit-event-type))
-                running = false
+                merge main-loop
 
         gfx.present;
+    main-loop ::
 
     0
 
