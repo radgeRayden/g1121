@@ -6,6 +6,11 @@ import .window
 import .gfx
 import .events
 
+@@ 'on events.quit
+fn ()
+    stdio.printf "Quitting, bye!\n"
+    true # yes, really quit
+
 fn main (argc argv)
     # order is important here.
     window.init;
@@ -13,11 +18,6 @@ fn main (argc argv)
     gfx.init;
 
     window.show;
-
-    events.set-callback 'quit
-        fn (ev)
-            stdio.printf "Quitting, bye!\n"
-            events.signal-application-exit;
 
     :: main-loop
     loop ()

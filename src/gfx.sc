@@ -1,4 +1,5 @@
 using import struct
+from (import C.stdio) let printf
 
 let wgpu = (import .FFI.wgpu)
 import .window
@@ -84,10 +85,6 @@ fn init ()
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
 
-    events.set-callback 'window-size-changed
-        fn (ev)
-            update-swapchain (window.get-size)
-
 fn present ()
     let width height = (window.get-size)
     let swapchain-image = (wgpu.SwapChainGetCurrentTextureView istate.swapchain)
@@ -117,6 +114,10 @@ fn present ()
     wgpu.QueueSubmit istate.queue 1 &cmd-buffer
     wgpu.SwapChainPresent istate.swapchain
     ;
+
+@@ 'on events.window-size-changed
+fn (width height)
+    update-swapchain width height
 
 do
     let init present
