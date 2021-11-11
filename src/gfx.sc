@@ -2,7 +2,7 @@ using import struct
 
 let wgpu = (import .FFI.wgpu)
 import .window
-import .callbacks
+import .events
 
 inline &local (T ...)
     &
@@ -84,7 +84,7 @@ fn init ()
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
 
-    callbacks.set-callback 'window-size-changed
+    events.set-callback 'window-size-changed
         fn (ev)
             update-swapchain (window.get-size)
 

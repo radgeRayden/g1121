@@ -1,4 +1,5 @@
 using import Map
+using import FunctionChain
 
 let sdl = (import .FFI.sdl)
 
@@ -105,12 +106,12 @@ fn signal-application-exit ()
     sdl.PushEvent &ev
     ;
 
-fn get-exit-event-type ()
-    deref application-exit-event
+fn really-quit? (ev)
+    ev.type == application-exit-event
 
 fn init ()
     application-exit-event = (sdl.RegisterEvents 1)
 
 do
-    let dispatch set-callback init signal-application-exit get-exit-event-type
+    let dispatch set-callback init signal-application-exit really-quit?
     locals;

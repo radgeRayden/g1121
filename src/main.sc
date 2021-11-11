@@ -4,28 +4,28 @@ let sdl = (import .FFI.sdl)
 import .runtime
 import .window
 import .gfx
-import .callbacks
+import .events
 
 fn main (argc argv)
     # order is important here.
     window.init;
-    callbacks.init;
+    events.init;
     gfx.init;
 
     window.show;
 
-    callbacks.set-callback 'quit
+    events.set-callback 'quit
         fn (ev)
             stdio.printf "Quitting, bye!\n"
-            callbacks.signal-application-exit;
+            events.signal-application-exit;
 
     :: main-loop
     loop ()
         local event : sdl.Event
         while (sdl.PollEvent &event)
-            callbacks.dispatch (deref event)
+            events.dispatch event
 
-            if (event.type == (callbacks.get-exit-event-type))
+            if (events.really-quit? event)
                 merge main-loop
 
         gfx.present;
