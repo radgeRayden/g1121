@@ -37,6 +37,14 @@ inline set-callback (id fun)
         error "unexpected event id type"
         unreachable;
 
+vvv bind callbacks
+do
+    fnchain quit
+    fnchain window-size-changed
+    fnchain key-pressed
+    fnchain key-released
+    locals;
+
 # To be able to handle a quit callback with the ability to back off and keep running,
 # we need an event that means "I really mean it, please quit" that is meant to be triggered
 # from inside such a callback.
@@ -51,11 +59,11 @@ fn signal-application-exit ()
 fn really-quit? (ev)
     ev.type == application-exit-event
 
-vvv bind callbacks
-do
-    fnchain quit
-    fnchain window-size-changed
-    locals;
+fn request-quit ()
+    local ev : sdl.Event
+    ev.type = sdl.SDL_QUIT
+    sdl.PushEvent &ev
+    ;
 
 fn init ()
     application-exit-event = (sdl.RegisterEvents 1)
@@ -70,8 +78,12 @@ fn init ()
         fn (ev)
             callbacks.window-size-changed ev.data1 ev.data2
 
+    set-callback sdl.SDL_KEYDOWN
+        fn (ev)
+            callbacks.key-pressed ev.key.keysym ev.key.repeat
+
 ..
     callbacks
     do
-        let init dispatch really-quit?
+        let init dispatch really-quit? request-quit
         locals;

@@ -11,6 +11,12 @@ fn ()
     stdio.printf "Quitting, bye!\n"
     true # yes, really quit
 
+@@ 'on events.key-pressed
+fn (keysym repeat?)
+    if (keysym.sym == sdl.SDLK_ESCAPE)
+        events.request-quit;
+    ;
+
 fn main (argc argv)
     # order is important here.
     window.init;
