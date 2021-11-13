@@ -10,22 +10,129 @@ inline &local (T ...)
         local T
             ...
 
+# SHADERS
+# ============================================================
+let vshader =
+    fn ()
+        using import glsl
+        using import glm
+
+        out vcolor : vec4
+            location = 0
+
+        local vertices =
+            arrayof vec3
+                vec3 -0.5 -0.5 0.0
+                vec3  0.5 -0.5 0.0
+                vec3  0.0  0.5 0.0
+
+        local colors =
+            arrayof vec3
+                vec3 0.0 1.0 0.0
+                vec3 0.0 0.0 1.0
+                vec3 1.0 0.0 0.0
+
+        gl_Position = (vec4 (vertices @ gl_VertexIndex) 1)
+        vcolor = (vec4 (colors @ gl_VertexIndex) 1)
+
+let fshader =
+    fn ()
+        using import glsl
+        using import glm
+
+        in vcolor : vec4
+            location = 0
+        out fcolor : vec4
+            location = 0
+
+        fcolor = vcolor
+
+let vshader-SPIRV fshader-SPIRV =
+    static-compile-spirv 0x10000 'vertex (static-typify vshader)
+    static-compile-spirv 0x10000 'fragment (static-typify fshader)
+
 struct GfxState plain
     surface : wgpu.Surface
     adapter : wgpu.Adapter
     device  : wgpu.Device
     swapchain : wgpu.SwapChain
     queue : wgpu.Queue
+    default-pipeline : wgpu.RenderPipeline
 
 global istate : GfxState
 
+inline shader-module-from-SPIRV (code)
+    local desc : wgpu.ShaderModuleSPIRVDescriptor
+        chain =
+            wgpu.ChainedStruct
+                sType = wgpu.SType.ShaderModuleSPIRVDescriptor
+        codeSize = ((countof code) // 4)
+        code = (code as rawstring as (@ u32))
+
+    let module =
+        wgpu.DeviceCreateShaderModule
+            istate.device
+            &local wgpu.ShaderModuleDescriptor
+                nextInChain = (&desc as (mutable@ wgpu.ChainedStruct))
+    module
+
+fn make-default-pipeline ()
+    let pip-layout =
+        wgpu.DeviceCreatePipelineLayout istate.device
+            &local wgpu.PipelineLayoutDescriptor
+                bindGroupLayoutCount = 0
+                bindGroupLayouts = null
+
+    wgpu.DeviceCreateRenderPipeline istate.device
+        &local wgpu.RenderPipelineDescriptor
+            layout = pip-layout
+            vertex =
+                wgpu.VertexState
+                    module = (shader-module-from-SPIRV vshader-SPIRV)
+                    entryPoint = "main"
+            primitive =
+                wgpu.PrimitiveState
+                    topology = wgpu.PrimitiveTopology.TriangleList
+                    frontFace = wgpu.FrontFace.CCW
+                    cullMode = wgpu.CullMode.None
+            multisample =
+                wgpu.MultisampleState
+                    count = 1
+                    mask = (~ 0:u32)
+                    alphaToCoverageEnabled = false
+            fragment =
+                &local wgpu.FragmentState
+                    module = (shader-module-from-SPIRV fshader-SPIRV)
+                    entryPoint = "main"
+                    targetCount = 1
+                    targets =
+                        &local wgpu.ColorTargetState
+                            format = (wgpu.SurfaceGetPreferredFormat
+                                istate.surface istate.adapter)
+                            blend =
+                                &local wgpu.BlendState
+                                    color =
+                                        typeinit
+                                            srcFactor = wgpu.BlendFactor.One
+                                            dstFactor = wgpu.BlendFactor.Zero
+                                            operation = wgpu.BlendOperation.Add
+                                    alpha =
+                                        typeinit
+                                            srcFactor = wgpu.BlendFactor.One
+                                            dstFactor = wgpu.BlendFactor.Zero
+                                            operation = wgpu.BlendOperation.Add
+                            writeMask = wgpu.ColorWriteMask.All
+
+
 fn update-swapchain (width height)
+    let format =(wgpu.SurfaceGetPreferredFormat istate.surface istate.adapter)
+    printf "surface format: %d\n" format
     istate.swapchain =
         wgpu.DeviceCreateSwapChain istate.device istate.surface
             &local wgpu.SwapChainDescriptor
                 label = "swapchain"
                 usage = wgpu.TextureUsage.RenderAttachment
-                format = wgpu.TextureFormat.BGRA8UnormSrgb
+                format = (wgpu.SurfaceGetPreferredFormat istate.surface istate.adapter)
                 width = (width as u32)
                 height = (height as u32)
                 presentMode = wgpu.PresentMode.Fifo
@@ -84,6 +191,7 @@ fn init ()
     update-swapchain (window.get-size)
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
+    istate.default-pipeline = (make-default-pipeline)
 
 fn present ()
     let width height = (window.get-size)
@@ -104,6 +212,9 @@ fn present ()
                         view = swapchain-image
                         clearColor = (typeinit 0.017 0.017 0.017 1.0)
 
+    wgpu.RenderPassEncoderSetPipeline rp istate.default-pipeline
+    wgpu.RenderPassEncoderDraw rp 3 1 0 0
+
     wgpu.RenderPassEncoderEndPass rp
 
     local cmd-buffer =
@@ -115,6 +226,7 @@ fn present ()
     wgpu.SwapChainPresent istate.swapchain
     ;
 
+# ============================================================
 @@ 'on events.window-size-changed
 fn (width height)
     update-swapchain width height
