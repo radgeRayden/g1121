@@ -5,10 +5,13 @@ let wgpu = (import .FFI.wgpu)
 import .window
 import .events
 
-inline &local (T ...)
+inline... &local (T : type, ...)
     &
         local T
             ...
+case (value)
+    &
+        local dummy-name = value
 
 # SHADERS
 # ============================================================
@@ -48,6 +51,7 @@ let vshader =
         gl_Position = (vec4 (vertices @ gl_VertexIndex) 1)
         # vcolor = (vec4 (colors @ gl_VertexIndex) 1)
         vcolor = (vec4 1)
+        vtexcoord = texcoords @ gl_VertexIndex
 
 let fshader =
     fn ()
@@ -61,7 +65,14 @@ let fshader =
         out fcolor : vec4
             location = 0
 
-        fcolor = vcolor
+        uniform tex : texture2D
+            set = 0
+            binding = 0
+        uniform samp : sampler
+            set = 0
+            binding = 1
+
+        fcolor = vcolor * (texture (sampler2D tex samp) vtexcoord)
 
 let vshader-SPIRV fshader-SPIRV =
     static-compile-spirv 0x10000 'vertex (static-typify vshader)
@@ -73,9 +84,14 @@ struct GfxState plain
     device  : wgpu.Device
     swapchain : wgpu.SwapChain
     queue : wgpu.Queue
+
+    # we're probably gonna remove these
     default-pipeline : wgpu.RenderPipeline
+    default-bgroup-layout : wgpu.BindGroupLayout
+    default-bgroup : wgpu.BindGroup
 
 global istate : GfxState
+global test-texture : wgpu.Texture
 
 inline shader-module-from-SPIRV (code)
     local desc : wgpu.ShaderModuleSPIRVDescriptor
@@ -92,12 +108,34 @@ inline shader-module-from-SPIRV (code)
                 nextInChain = (&desc as (mutable@ wgpu.ChainedStruct))
     module
 
+fn make-default-bindgroup-layout ()
+    wgpu.DeviceCreateBindGroupLayout istate.device
+        &local wgpu.BindGroupLayoutDescriptor
+            entryCount = 2
+            entries =
+                &local
+                    arrayof wgpu.BindGroupLayoutEntry
+                        typeinit
+                            binding = 0
+                            visibility = wgpu.ShaderStage.Fragment
+                            texture =
+                                typeinit
+                                    sampleType = wgpu.TextureSampleType.Float
+                                    viewDimension = wgpu.TextureViewDimension.2D
+                                    multisampled = false
+                        typeinit
+                            binding = 1
+                            visibility = wgpu.ShaderStage.Fragment
+                            sampler =
+                                typeinit
+                                    type = wgpu.SamplerBindingType.Filtering
+
 fn make-default-pipeline ()
     let pip-layout =
         wgpu.DeviceCreatePipelineLayout istate.device
             &local wgpu.PipelineLayoutDescriptor
-                bindGroupLayoutCount = 0
-                bindGroupLayouts = null
+                bindGroupLayoutCount = 1
+                bindGroupLayouts = &istate.default-bgroup-layout
 
     wgpu.DeviceCreateRenderPipeline istate.device
         &local wgpu.RenderPipelineDescriptor
@@ -139,6 +177,38 @@ fn make-default-pipeline ()
                                             operation = wgpu.BlendOperation.Add
                             writeMask = wgpu.ColorWriteMask.All
 
+fn make-default-bindgroup ()
+    wgpu.DeviceCreateBindGroup istate.device
+        &local wgpu.BindGroupDescriptor
+            label = "default bindgroup"
+            layout = istate.default-bgroup-layout
+            entryCount = 2
+            entries =
+                &local
+                    arrayof wgpu.BindGroupEntry
+                        typeinit
+                            binding = 0
+                            textureView =
+                                wgpu.TextureCreateView test-texture
+                                    &local wgpu.TextureViewDescriptor
+                                        format = wgpu.TextureFormat.RGBA8UnormSrgb
+                                        dimension = wgpu.TextureViewDimension.2D
+                                        baseMipLevel = 0
+                                        mipLevelCount = 1
+                                        baseArrayLayer = 0
+                                        arrayLayerCount = 1
+                                        aspect = wgpu.TextureAspect.All
+                        typeinit
+                            binding = 1
+                            sampler =
+                                wgpu.DeviceCreateSampler istate.device
+                                    &local wgpu.SamplerDescriptor
+                                        addressModeU = wgpu.AddressMode.Repeat
+                                        addressModeV = wgpu.AddressMode.Repeat
+                                        addressModeW = wgpu.AddressMode.Repeat
+                                        magFilter = wgpu.FilterMode.Linear
+                                        minFilter = wgpu.FilterMode.Linear
+                                        mipmapFilter = wgpu.FilterMode.Linear
 
 fn update-swapchain (width height)
     let format =(wgpu.SurfaceGetPreferredFormat istate.surface istate.adapter)
@@ -184,7 +254,6 @@ fn create-wgpu-surface ()
     default
         error "OS not supported"
 
-global test-texture : wgpu.Texture
 fn make-test-texture ()
     let width height = 640 480
 
@@ -192,7 +261,7 @@ fn make-test-texture ()
         wgpu.DeviceCreateTexture istate.device
             &local wgpu.TextureDescriptor
                 label = "test texture"
-                usage = wgpu.TextureUsage.CopyDst
+                usage = (wgpu.TextureUsage.TextureBinding | wgpu.TextureUsage.CopyDst)
                 dimension = wgpu.TextureDimension.2D
                 size = (wgpu.Extent3D width height 1)
                 format = wgpu.TextureFormat.RGBA8UnormSrgb
@@ -207,12 +276,15 @@ fn make-test-texture ()
     'resize imgdata (* width height 4)
     for x y in (dim width height)
         idx := (y * width + x) * 4
-        let color =
-            if x < width // 2
-                ivec4 255 0 255 255
-            else
-                ivec4 0 255 0 255
-        
+        local color : ivec4 0 0 0 255
+
+        if (x < width // 2)
+            color.r = 255
+        else
+            color.g = 255
+        if (y < height // 2)
+            color.b = 255
+
         imgdata @ idx       = color.r as u8
         imgdata @ (idx + 1) = color.g as u8
         imgdata @ (idx + 2) = color.b as u8
@@ -256,9 +328,10 @@ fn init ()
     update-swapchain (window.get-size)
 
     istate.queue = (wgpu.DeviceGetQueue istate.device)
+    istate.default-bgroup-layout = (make-default-bindgroup-layout)
     istate.default-pipeline = (make-default-pipeline)
-
     make-test-texture;
+    istate.default-bgroup = (make-default-bindgroup)
 
 fn present ()
     let width height = (window.get-size)
@@ -280,6 +353,7 @@ fn present ()
                         clearColor = (typeinit 0.017 0.017 0.017 1.0)
 
     wgpu.RenderPassEncoderSetPipeline rp istate.default-pipeline
+    wgpu.RenderPassEncoderSetBindGroup rp 0 istate.default-bgroup 0 null
     wgpu.RenderPassEncoderDraw rp 6 1 0 0
 
     wgpu.RenderPassEncoderEndPass rp
