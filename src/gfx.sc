@@ -17,31 +17,47 @@ let vshader =
         using import glsl
         using import glm
 
-        out vcolor : vec4
-            location = 0
-
+        # 0 ----- 3
+        # | \     |
+        # |   \   |
+        # |     \ |
+        # 1 ----- 2
         local vertices =
             arrayof vec3
-                vec3 -0.5 -0.5 0.0
-                vec3  0.5 -0.5 0.0
-                vec3  0.0  0.5 0.0
+                vec3  1.0 -1.0 0.0 # 2
+                vec3 -1.0  1.0 0.0 # 0
+                vec3 -1.0 -1.0 0.0 # 1
+                vec3 -1.0  1.0 0.0 # 0
+                vec3  1.0 -1.0 0.0 # 2
+                vec3  1.0  1.0 0.0 # 3
 
-        local colors =
-            arrayof vec3
-                vec3 0.0 1.0 0.0
-                vec3 0.0 0.0 1.0
-                vec3 1.0 0.0 0.0
+        local texcoords =
+            arrayof vec2
+                vec2 1.0 0.0 # 2
+                vec2 0.0 1.0 # 0
+                vec2 0.0 0.0 # 1
+                vec2 0.0 1.0 # 0
+                vec2 1.0 0.0 # 2
+                vec2 1.0 1.0 # 3
+
+        out vtexcoord : vec2
+            location = 0
+        out vcolor : vec4
+            location = 1
 
         gl_Position = (vec4 (vertices @ gl_VertexIndex) 1)
-        vcolor = (vec4 (colors @ gl_VertexIndex) 1)
+        # vcolor = (vec4 (colors @ gl_VertexIndex) 1)
+        vcolor = (vec4 1)
 
 let fshader =
     fn ()
         using import glsl
         using import glm
 
-        in vcolor : vec4
+        in vtexcoord : vec2
             location = 0
+        in vcolor : vec4
+            location = 1
         out fcolor : vec4
             location = 0
 
@@ -168,6 +184,55 @@ fn create-wgpu-surface ()
     default
         error "OS not supported"
 
+global test-texture : wgpu.Texture
+fn make-test-texture ()
+    let width height = 640 480
+
+    test-texture =
+        wgpu.DeviceCreateTexture istate.device
+            &local wgpu.TextureDescriptor
+                label = "test texture"
+                usage = wgpu.TextureUsage.CopyDst
+                dimension = wgpu.TextureDimension.2D
+                size = (wgpu.Extent3D width height 1)
+                format = wgpu.TextureFormat.RGBA8UnormSrgb
+                mipLevelCount = 1
+                sampleCount = 1
+
+    using import Array
+    using import itertools
+    using import glm
+
+    local imgdata : (Array u8)
+    'resize imgdata (* width height 4)
+    for x y in (dim width height)
+        idx := (y * width + x) * 4
+        let color =
+            if x < width // 2
+                ivec4 255 0 255 255
+            else
+                ivec4 0 255 0 255
+        
+        imgdata @ idx       = color.r as u8
+        imgdata @ (idx + 1) = color.g as u8
+        imgdata @ (idx + 2) = color.b as u8
+        imgdata @ (idx + 3) = color.a as u8
+
+    wgpu.QueueWriteTexture istate.queue
+        &local wgpu.ImageCopyTexture
+            texture = test-texture
+            mipLevel = 0
+            origin = (wgpu.Origin3D)
+            aspect = wgpu.TextureAspect.All
+        (imply imgdata pointer) as voidstar
+        countof imgdata
+        &local wgpu.TextureDataLayout
+            offset = 0
+            bytesPerRow = (width * 4)
+            rowsPerImage = height
+        &local wgpu.Extent3D width height 1
+    ;
+
 fn init ()
     istate.surface = (create-wgpu-surface)
 
@@ -193,6 +258,8 @@ fn init ()
     istate.queue = (wgpu.DeviceGetQueue istate.device)
     istate.default-pipeline = (make-default-pipeline)
 
+    make-test-texture;
+
 fn present ()
     let width height = (window.get-size)
     let swapchain-image = (wgpu.SwapChainGetCurrentTextureView istate.swapchain)
@@ -213,7 +280,7 @@ fn present ()
                         clearColor = (typeinit 0.017 0.017 0.017 1.0)
 
     wgpu.RenderPassEncoderSetPipeline rp istate.default-pipeline
-    wgpu.RenderPassEncoderDraw rp 3 1 0 0
+    wgpu.RenderPassEncoderDraw rp 6 1 0 0
 
     wgpu.RenderPassEncoderEndPass rp
 
