@@ -3,7 +3,7 @@ using import String
 using import Option
 import C.stdio
 
-inline log (fmt ...)
+inline io.log (fmt ...)
     # convert arguments to make sure we don't print containers, since
       C varargs are indiscriminate.
     let ... =
@@ -26,7 +26,7 @@ inline read-full-file (filename containerT)
     using C.stdio
     let fhandle = (fopen filename "rb")
     if (fhandle == null)
-        log "io: %s - there was an error loading the file.\n" filename
+        io.log "io: %s - there was an error loading the file.\n" filename
         return ((Option containerT))
 
     fseek fhandle 0 SEEK_END
@@ -49,5 +49,5 @@ do
     let
         load-file
         load-text-file
-        log
+    let log = io.log
     locals;
