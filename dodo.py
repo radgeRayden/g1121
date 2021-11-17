@@ -45,11 +45,17 @@ runtime_libs = [
     "wgpu_native"
 ]
 
+csources = [
+    "./native/hash.c",
+    "./native/stb.c"
+]
+
 def task_bin():
     """build the game binary"""
     llibs = "".join(f" -l{lib}" for lib in runtime_libs)
+    sources = " ".join(csources)
     return {
-        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/{exename} ./build/game.o ./native/hash.c -Wl,-rpath='$ORIGIN' -L./bin {llibs} -lSDL2"],
+        'actions': ["scopes ./src/boot.sc", f"gcc -o bin/{exename} ./build/game.o {sources} -Wl,-rpath='$ORIGIN' -L./bin {llibs} -lSDL2 {lflags_common}"],
         'targets': [f"./bin/{exename}"],
         'file_dep': [f"./bin/lib{lib}.so" for lib in runtime_libs],
         'uptodate': [False]
