@@ -2,6 +2,7 @@ using import struct
 from (import C.stdio) let printf
 
 let wgpu = (import .FFI.wgpu)
+let stbi = (import .FFI.stbi)
 import .window
 import .events
 
@@ -255,7 +256,10 @@ fn create-wgpu-surface ()
         error "OS not supported"
 
 fn make-test-texture ()
-    let width height = 640 480
+    local width : i32
+    local height : i32
+    local channel-count : i32
+    let data = (stbi.load "assets/surfing_pikachu.png" &width &height &channel-count 4)
 
     test-texture =
         wgpu.DeviceCreateTexture istate.device
@@ -263,7 +267,7 @@ fn make-test-texture ()
                 label = "test texture"
                 usage = (wgpu.TextureUsage.TextureBinding | wgpu.TextureUsage.CopyDst)
                 dimension = wgpu.TextureDimension.2D
-                size = (wgpu.Extent3D width height 1)
+                size = (wgpu.Extent3D (width as u32) (height as u32) 1)
                 format = wgpu.TextureFormat.RGBA8UnormSrgb
                 mipLevelCount = 1
                 sampleCount = 1
@@ -272,37 +276,19 @@ fn make-test-texture ()
     using import itertools
     using import glm
 
-    local imgdata : (Array u8)
-    'resize imgdata (* width height 4)
-    for x y in (dim width height)
-        idx := (y * width + x) * 4
-        local color : ivec4 0 0 0 255
-
-        if (x < width // 2)
-            color.r = 255
-        else
-            color.g = 255
-        if (y < height // 2)
-            color.b = 255
-
-        imgdata @ idx       = color.r as u8
-        imgdata @ (idx + 1) = color.g as u8
-        imgdata @ (idx + 2) = color.b as u8
-        imgdata @ (idx + 3) = color.a as u8
-
     wgpu.QueueWriteTexture istate.queue
         &local wgpu.ImageCopyTexture
             texture = test-texture
             mipLevel = 0
             origin = (wgpu.Origin3D)
             aspect = wgpu.TextureAspect.All
-        (imply imgdata pointer) as voidstar
-        countof imgdata
+        data as voidstar
+        width * height * 4
         &local wgpu.TextureDataLayout
             offset = 0
-            bytesPerRow = (width * 4)
-            rowsPerImage = height
-        &local wgpu.Extent3D width height 1
+            bytesPerRow = ((width as u32) * 4)
+            rowsPerImage = (height as u32)
+        &local wgpu.Extent3D (width as u32) (height as u32) 1
     ;
 
 fn init ()
