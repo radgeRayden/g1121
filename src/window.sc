@@ -49,7 +49,7 @@ fn init ()
 
     window =
         sdl.CreateWindow
-            "my very nice game"
+            "Game from Scratch Re:Birth"
             sdl.SDL_WINDOWPOS_UNDEFINED
             sdl.SDL_WINDOWPOS_UNDEFINED
             640
