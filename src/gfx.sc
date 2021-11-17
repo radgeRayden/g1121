@@ -35,14 +35,15 @@ let vshader =
                 vec3  1.0 -1.0 0.0 # 2
                 vec3  1.0  1.0 0.0 # 3
 
+        # NOTE: inverted UVs to flip images
         local texcoords =
             arrayof vec2
-                vec2 1.0 0.0 # 2
-                vec2 0.0 1.0 # 0
-                vec2 0.0 0.0 # 1
-                vec2 0.0 1.0 # 0
-                vec2 1.0 0.0 # 2
-                vec2 1.0 1.0 # 3
+                vec2 1.0 1.0 # 2
+                vec2 0.0 0.0 # 0
+                vec2 0.0 1.0 # 1
+                vec2 0.0 0.0 # 0
+                vec2 1.0 1.0 # 2
+                vec2 1.0 0.0 # 3
 
         out vtexcoord : vec2
             location = 0
