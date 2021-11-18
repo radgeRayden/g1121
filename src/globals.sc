@@ -42,6 +42,13 @@ sugar aot-assert (args...)
 inline prefix:cs (str)
     str as rawstring
 
+# Make some modules accessible from everywhere
+'set-symbol package 'path
+    .. package.path
+        list
+            module-dir .. "/FFI/?.sc"
+            module-dir .. "/utils/?.sc"
+
 set-globals!
     ..
         do

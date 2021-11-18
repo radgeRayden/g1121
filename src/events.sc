@@ -2,7 +2,7 @@ using import Map
 using import FunctionChain
 from (import C.stdio) let printf
 
-let sdl = (import .FFI.sdl)
+import sdl
 
 let EventCallback = (@ (function void sdl.Event))
 let WindowEventCallback = (@ (function void sdl.WindowEvent))

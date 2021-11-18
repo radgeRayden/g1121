@@ -1,4 +1,4 @@
-let sdl = (import .FFI.sdl)
+import sdl
 
 global window : (mutable@ sdl.Window)
 

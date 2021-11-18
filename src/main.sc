@@ -1,5 +1,5 @@
 let stdio = (import C.stdio)
-let sdl = (import .FFI.sdl)
+import sdl
 
 import .runtime
 import .window

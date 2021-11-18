@@ -6,7 +6,3 @@ inline filter-scope (scope pattern)
             'bind scope (Symbol (rslice name end)) v
         else
             scope
-
-do
-    let filter-scope
-    locals;

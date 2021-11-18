@@ -1,8 +1,8 @@
 using import struct
 from (import C.stdio) let printf
 
-let wgpu = (import .FFI.wgpu)
-let stbi = (import .FFI.stbi)
+import wgpu
+import stbi
 import .window
 import .events
 
