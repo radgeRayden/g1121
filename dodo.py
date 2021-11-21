@@ -41,7 +41,8 @@ def task_wgpu():
     wgpu = "./native/wgpu"
     return {
         'actions': [f"{make} -C {wgpu} lib-native", f"cp {wgpu}/target/debug/libwgpu_native.so ./bin/"],
-        'targets': [f"./bin/libwgpu_native.so"]
+        'targets': [f"./bin/libwgpu_native.so"],
+        'uptodate': [True]
     }
 
 runtime_libs = [
