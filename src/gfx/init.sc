@@ -3,8 +3,8 @@ from (import C.stdio) let printf
 
 import wgpu
 import stbi
-import .window
-import .events
+import ..window
+import ..events
 
 inline... &local (T : type, ...)
     &
